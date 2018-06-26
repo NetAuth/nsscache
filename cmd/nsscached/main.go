@@ -181,10 +181,10 @@ func main() {
 	}
 
 	// Generate the indexes
-	passwdixname := genIndex(passwd, 1)
-	passwdixuid := genIndex(passwd, 3)
-	groupixname := genIndex(group, 1)
-	groupixgid := genIndex(group, 3)
+	passwdixname := genIndex(passwd, 0)
+	passwdixuid := genIndex(passwd, 2)
+	groupixname := genIndex(group, 0)
+	groupixgid := genIndex(group, 2)
 
 	// Write the indexes
 	if err := writeIndex(passwdixname, *pMapFile+".ixname"); err != nil {
