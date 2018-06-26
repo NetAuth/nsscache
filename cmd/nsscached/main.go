@@ -102,6 +102,7 @@ func genGroup(entList []*Protocol.Entity, grpList []*Protocol.Group) ([]string, 
 
 func writeMap(mapLines []string, location string) error {
 	fileString := strings.Join(mapLines, "\n")
+	fileString += "\n"
 	return ioutil.WriteFile(location, []byte(fileString), 0644)
 }
 
