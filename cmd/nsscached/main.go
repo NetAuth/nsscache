@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"sort"
 	"strings"
 
@@ -34,7 +35,7 @@ func init() {
 	nacl, err = client.New(nil)
 	if err != nil {
 		log.Println(err)
-		return
+		os.Exit(1)
 	}
 	nacl.SetServiceID("nsscached")
 
@@ -42,7 +43,7 @@ func init() {
 	bytes, err := ioutil.ReadFile("/etc/shells")
 	if err != nil {
 		log.Printf("Error reading /etc/shells %s", err)
-		return
+		os.Exit(2)
 	}
 	shellString := string(bytes[:])
 	for _, s := range strings.Split(shellString, "\n") {
