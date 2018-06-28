@@ -20,6 +20,7 @@ var (
 
 	pMapFile = flag.String("passwd-file", "/etc/passwd.cache", "Passwd cache to write to")
 	gMapFile = flag.String("group-file", "/etc/group.cache", "Group cache to write to")
+	sMapFile = flag.String("shadow-file", "/etc/shadow.cache", "Shadow cache to write to")
 
 	indirects = flag.Bool("indirects", true, "Include indirect relationships in the group map")
 	minUID    = flag.Int("min-uid", 2000, "Minimum UID number to accept")
@@ -157,6 +158,16 @@ func genGroup(entList []*Protocol.Entity, grpList []*Protocol.Group) ([]string, 
 	return lines, nil
 }
 
+func genShadow(passwd []string) []string {
+	lines := []string{}
+	for _, ent := range passwd {
+		entity := strings.Split(ent, ":")[0]
+		line := fmt.Sprintf("%s:*:::::::", entity)
+		lines = append(lines, line)
+	}
+	return lines
+}
+
 // checkShell verifies that the requested shell exists on this system,
 // and if it does not it replaces it with a default shell as provided
 // by the flags.
@@ -250,11 +261,17 @@ func main() {
 		return
 	}
 
+	// Generate the shadow map from the passwd one
+	shadow := genShadow(passwd)
+
 	// Write out the base maps
 	if err := writeMap(passwd, *pMapFile); err != nil {
 		log.Println(err)
 	}
 	if err := writeMap(group, *gMapFile); err != nil {
+		log.Println(err)
+	}
+	if err := writeMap(shadow, *sMapFile); err != nil {
 		log.Println(err)
 	}
 
@@ -263,6 +280,7 @@ func main() {
 	passwdixuid := genIndex(passwd, 2)
 	groupixname := genIndex(group, 0)
 	groupixgid := genIndex(group, 2)
+	shadowixname := genIndex(shadow, 0)
 
 	// Write the indexes
 	if err := writeIndex(passwdixname, *pMapFile+".ixname"); err != nil {
@@ -275,6 +293,9 @@ func main() {
 		log.Println(err)
 	}
 	if err := writeIndex(groupixgid, *gMapFile+".ixgid"); err != nil {
+		log.Println(err)
+	}
+	if err := writeIndex(shadowixname, *sMapFile+".ixname"); err != nil {
 		log.Println(err)
 	}
 }
