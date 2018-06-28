@@ -1,24 +1,31 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"sort"
 	"strings"
-	"bytes"
 
 	"github.com/NetAuth/NetAuth/pkg/client"
 	"github.com/NetAuth/Protocol"
 )
 
 var (
-	nacl        *client.NetAuthClient
-	defaultPGID = flag.Int("default-pgid", 10000, "Default primary group to use if none is provided")
-	indirects   = flag.Bool("indirects", true, "Include indirect relationships in the group map")
-	pMapFile    = flag.String("passwd-file", "/etc/passwd.cache", "Passwd cache to write to")
-	gMapFile    = flag.String("group-file", "/etc/group.cache", "Group cache to write to")
+	nacl         *client.NetAuthClient
+	systemShells []string
+
+	pMapFile = flag.String("passwd-file", "/etc/passwd.cache", "Passwd cache to write to")
+	gMapFile = flag.String("group-file", "/etc/group.cache", "Group cache to write to")
+
+	indirects = flag.Bool("indirects", true, "Include indirect relationships in the group map")
+	minUID    = flag.Int("min-uid", 2000, "Minimum UID number to accept")
+	minGID    = flag.Int("min-gid", 2000, "Minimum GID number to accept")
+
+	defHomeDir = flag.String("homedir", "/tmp/{UID}", "Home directory to provide if none is available from NetAuth")
+	defShell   = flag.String("shell", "/bin/nologin", "Default shell to use if none is provided in the directory")
 )
 
 func init() {
@@ -30,6 +37,23 @@ func init() {
 		return
 	}
 	nacl.SetServiceID("nsscached")
+
+	// Grab a listing of system shells and add them here
+	bytes, err := ioutil.ReadFile("/etc/shells")
+	if err != nil {
+		log.Printf("Error reading /etc/shells %s", err)
+		return
+	}
+	shellString := string(bytes[:])
+	for _, s := range strings.Split(shellString, "\n") {
+		if s != "" {
+			systemShells = append(systemShells, s)
+		}
+	}
+	log.Println("The system will accept the following shells")
+	for _, s := range systemShells {
+		log.Printf("  %s", s)
+	}
 }
 
 func genPasswd(entList []*Protocol.Entity, grpMap map[string]*Protocol.Group) ([]string, error) {
@@ -41,21 +65,53 @@ func genPasswd(entList []*Protocol.Entity, grpMap map[string]*Protocol.Group) ([
 	// Iterate on the entities and spit out the passwd line.
 	lines := []string{}
 	for _, e := range entList {
+		if int(e.GetNumber()) < *minUID {
+			log.Printf("Entity %s has number below min-uid (%d<%d)",
+				e.GetID(),
+				e.GetNumber(),
+				*minUID)
+			// Drop this entity due to UID constraints
+			continue
+		}
+		// All entities must have meta data to have a UNIX
+		// style account mapping.
+		if e.GetMeta() == nil {
+			log.Printf("Entity %s is missing metadata", e.GetID())
+			continue
+		}
+
+		// Determine the primary group number, must be set for
+		// UNIX style system logins, as this is not something
+		// that can be sanely guessed later.
 		var pgid int
 		grp, ok := grpMap[e.GetMeta().GetPrimaryGroup()]
 		if ok {
 			pgid = int(grp.GetNumber())
 		} else {
-			pgid = *defaultPGID
+			log.Printf("Entity %s has invalid primary group", e.GetID())
+			// Drop this entity due to group constraints
+			continue
 		}
 
+		// Set the homedir, this can be set to a default if it
+		// isn't specified, since this is something that can
+		// be done on a system local level.
+		homedir := e.GetMeta().GetHome()
+		if homedir == "" {
+			homedir = strings.Replace(*defHomeDir, "{UID}", e.GetID(), -1)
+		}
+
+		// Sanity check the shell
+		shell := checkShell(e.GetMeta().GetShell())
+
+		// Create the line for the passwd map
 		lines = append(lines, fmt.Sprintf("%s:x:%d:%d:%s:%s:%s",
 			e.GetID(),
 			e.GetNumber(),
 			pgid,
 			e.GetMeta().GetGECOS(),
-			e.GetMeta().GetHome(),
-			e.GetMeta().GetShell(),
+			homedir,
+			shell,
 		))
 	}
 	return lines, nil
@@ -98,6 +154,20 @@ func genGroup(entList []*Protocol.Entity, grpList []*Protocol.Group) ([]string, 
 		))
 	}
 	return lines, nil
+}
+
+// checkShell verifies that the requested shell exists on this system,
+// and if it does not it replaces it with a default shell as provided
+// by the flags.
+func checkShell(shell string) string {
+	for _, s := range systemShells {
+		if shell == s {
+			return s
+		}
+	}
+
+	// Shell isn't on this system
+	return *defShell
 }
 
 func writeMap(mapLines []string, location string) error {
@@ -157,6 +227,13 @@ func main() {
 	// back easier later.
 	grpMap := make(map[string]*Protocol.Group)
 	for _, g := range grpList {
+		if int(g.GetNumber()) < *minGID {
+			log.Printf("Group %s has number below min-gid (%d<%d)",
+				g.GetName(),
+				g.GetNumber(),
+				*minGID)
+			continue
+		}
 		grpMap[g.GetName()] = g
 	}
 
