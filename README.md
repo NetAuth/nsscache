@@ -19,10 +19,10 @@ configuration file at `/etc/netauth.toml`.
 Important options from the help output:
 
 ```
-  -group-file string
-Group cache to write to (default "/etc/group.cache")
   -homedir string
 Home directory to provide if none is available from NetAuth (default "/tmp/{UID}")
+  -shell string
+Default shell to use if none is provided in the directory (default "/bin/nologin")
   -indirects
 Include indirect relationships in the group map (default true)
   -min-gid int
@@ -31,10 +31,10 @@ Minimum GID number to accept (default 2000)
 Minimum UID number to accept (default 2000)
   -passwd-file string
 Passwd cache to write to (default "/etc/passwd.cache")
+  -group-file string
+Group cache to write to (default "/etc/group.cache")
   -shadow-file string
 Shadow cache to write to (default "/etc/shadow.cache")
-  -shell string
-Default shell to use if none is provided in the directory (default "/bin/nologin")
 ```
 
 Of these, the following are important to understand:
