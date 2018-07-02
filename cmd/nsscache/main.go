@@ -202,7 +202,7 @@ func genIndex(lines []string, indexCol int) map[string]int {
 
 func writeIndex(index map[string]int, location string) error {
 	keyList := []string{}
-	for k, _ := range index {
+	for k := range index {
 		keyList = append(keyList, k)
 	}
 
