@@ -13,13 +13,13 @@
     "internal/crypto",
     "internal/db",
     "internal/token",
-    "internal/token/impl",
-    "internal/token/impl/jwt",
+    "internal/token/all",
+    "internal/token/jwt",
     "internal/tree",
     "pkg/client"
   ]
-  revision = "7b88b7eb5534f1ddec8b06d5a971a9689e45a44b"
-  version = "v0.0.6"
+  revision = "f827b297215682ba3b2a1b026874080f513800a1"
+  version = "v0.0.8"
 
 [[projects]]
   branch = "master"
@@ -43,7 +43,7 @@
     "ptypes/duration",
     "ptypes/timestamp"
   ]
-  revision = "9eb2c01ac278a5d89ce4b2be68fe4500955d8179"
+  revision = "1325a051a2753cd67556b182843b1b693d0854cd"
 
 [[projects]]
   branch = "master"
@@ -57,7 +57,7 @@
     "internal/timeseries",
     "trace"
   ]
-  revision = "afe8f62b1d6bbd81f31868121a50b06d8188e1f9"
+  revision = "32a936f46389aa10549d60bd7833e54b01685d09"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -84,7 +84,7 @@
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
-  revision = "80063a038e333bbe006c878e4c5ce4c74d055498"
+  revision = "8b2cc369ab52e0003a878865c9372afdd6ca5c5a"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -121,6 +121,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "146a5b4c4b59e9a00ed3d45c16a3235baca1f591b1d11393d2d29ce589bfd24b"
+  inputs-digest = "d3f2b26b0b0af52221e36e2046e998f36a827b042ce987affd031112cbcb139a"
   solver-name = "gps-cdcl"
   solver-version = 1

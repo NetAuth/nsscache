@@ -24,11 +24,6 @@
 #   go-tests = true
 #   unused-packages = true
 
-
-[[constraint]]
-  name = "github.com/NetAuth/NetAuth"
-  version = "0.0.6"
-
 [prune]
   go-tests = true
   unused-packages = true
