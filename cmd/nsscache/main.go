@@ -2,13 +2,15 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
 	"github.com/NetAuth/NetAuth/pkg/client"
 	"github.com/NetAuth/Protocol"
@@ -18,27 +20,28 @@ var (
 	nacl         *client.NetAuthClient
 	systemShells []string
 
-	pMapFile = flag.String("passwd-file", "/etc/passwd.cache", "Passwd cache to write to")
-	gMapFile = flag.String("group-file", "/etc/group.cache", "Group cache to write to")
-	sMapFile = flag.String("shadow-file", "/etc/shadow.cache", "Shadow cache to write to")
+	pMapFile = pflag.String("passwd-file", "/etc/passwd.cache", "Passwd cache to write to")
+	gMapFile = pflag.String("group-file", "/etc/group.cache", "Group cache to write to")
+	sMapFile = pflag.String("shadow-file", "/etc/shadow.cache", "Shadow cache to write to")
 
-	indirects = flag.Bool("indirects", true, "Include indirect relationships in the group map")
-	minUID    = flag.Int("min-uid", 2000, "Minimum UID number to accept")
-	minGID    = flag.Int("min-gid", 2000, "Minimum GID number to accept")
+	indirects = pflag.Bool("indirects", true, "Include indirect relationships in the group map")
+	minUID    = pflag.Int("min-uid", 2000, "Minimum UID number to accept")
+	minGID    = pflag.Int("min-gid", 2000, "Minimum GID number to accept")
 
-	defHomeDir = flag.String("homedir", "/tmp/{UID}", "Home directory to provide if none is available from NetAuth")
-	defShell   = flag.String("shell", "/bin/nologin", "Default shell to use if none is provided in the directory")
+	defHomeDir = pflag.String("homedir", "/tmp/{UID}", "Home directory to provide if none is available from NetAuth")
+	defShell   = pflag.String("shell", "/bin/nologin", "Default shell to use if none is provided in the directory")
+
+	cfgfile = pflag.String("config", "", "Config file to use")
 )
 
-func init() {
+func initialize() {
 	// Grab a client and identify as nsscached
 	var err error
-	nacl, err = client.New(nil)
+	nacl, err = client.New()
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
-	nacl.SetServiceID("nsscached")
 
 	// Grab a listing of system shells and add them here
 	bytes, err := ioutil.ReadFile("/etc/shells")
@@ -223,7 +226,24 @@ func writeIndex(index map[string]int, location string) error {
 }
 
 func main() {
-	flag.Parse()
+	pflag.Parse()
+	viper.BindPFlags(pflag.CommandLine)
+	if *cfgfile != "" {
+		viper.SetConfigFile(*cfgfile)
+	} else {
+		viper.SetConfigName("config")
+		viper.AddConfigPath("/etc/netauth/")
+		viper.AddConfigPath("$HOME/.netauth")
+		viper.AddConfigPath(".")
+	}
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Println("Error reading config:", err)
+		os.Exit(1)
+	}
+	viper.Set("client.ServiceName", "nsscache")
+
+	// Perform initialization
+	initialize()
 
 	// Get a complete list of entities and all groups
 	entList, err := nacl.ListGroupMembers("ALL")
