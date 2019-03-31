@@ -246,16 +246,18 @@ func main() {
 	initialize()
 
 	// Get a complete list of entities and all groups
-	entList, err := nacl.ListGroupMembers("ALL")
+	entResp, err := nacl.SearchEntities("*")
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
-	grpList, err := nacl.ListGroups("", false)
+	entList := entResp.GetMembers()
+	grpResp, err := nacl.SearchGroups("*")
 	if err != nil {
 		log.Println(err)
 		os.Exit(2)
 	}
+	grpList := grpResp.GetGroups()
 
 	// Turn the group list into a map so that we can fetch these
 	// back easier later.
