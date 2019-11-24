@@ -8,7 +8,7 @@ import (
 	"github.com/MiLk/nsscache-go/cache"
 	"github.com/MiLk/nsscache-go/source"
 
-	pb "github.com/NetAuth/Protocol"
+	pb "github.com/netauth/protocol"
 	"github.com/netauth/netauth/pkg/netauth"
 
 	// We need a token cache available, even if no tokens will be
