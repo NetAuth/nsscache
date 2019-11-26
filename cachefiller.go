@@ -130,7 +130,7 @@ func (nc *NetAuthCacheFiller) FillPasswdCache(c *cache.Cache) error {
 	for i := range nc.entities {
 		c.Add(&cache.PasswdEntry{
 			Name:   nc.entities[i].GetID(),
-			Passwd: "x",
+			Passwd: "*",
 			UID:    uint32(nc.entities[i].GetNumber()),
 			GID:    nc.pgroups[nc.entities[i].GetMeta().GetPrimaryGroup()],
 			Dir:    nc.entities[i].GetMeta().GetHome(),
