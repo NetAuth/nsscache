@@ -48,6 +48,8 @@ func initialize() {
 }
 
 func main() {
+	log = hclog.L().Named("nsscache")
+
 	pflag.Parse()
 	viper.BindPFlags(pflag.CommandLine)
 	if *cfgfile != "" {
@@ -68,7 +70,7 @@ func main() {
 
 	filler, err := NewCacheFiller(int32(*minUID), int32(*minGID), *defShell, *defHomeDir, systemShells)
 	if err != nil {
-		log.Error("Error initializing Cache Filler: ", "error" ,err)
+		log.Error("Error initializing Cache Filler: ", "error", err)
 		os.Exit(1)
 	}
 
