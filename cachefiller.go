@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"log"
 	"strings"
 
 	"github.com/MiLk/nsscache-go/cache"
 	"github.com/MiLk/nsscache-go/source"
+	"github.com/hashicorp/go-hclog"
 
 	pb "github.com/netauth/protocol"
 	"github.com/netauth/netauth/pkg/netauth"
@@ -52,6 +52,8 @@ type NetAuthCacheFiller struct {
 	DefaultHome string
 
 	c *netauth.Client
+
+	l hclog.Logger
 }
 
 // NewCacheFiller returns an interface that can be used to fill caches
@@ -70,13 +72,15 @@ func NewCacheFiller(minuid, mingid int32, defshell, defhome string, shells []str
 		AllowedShells: shells,
 
 		DefaultHome: defhome,
+
+		l: hclog.L().Named("cachefiller"),
 	}
 
 	ctx := context.Background()
 
 	c, err := netauth.New()
 	if err != nil {
-		log.Println("Error during client initialization")
+		x.l.Error("Error during client initialization", "error", err)
 		return nil, err
 	}
 	c.SetServiceName("nsscache")
@@ -148,7 +152,10 @@ func (nc *NetAuthCacheFiller) findGroups(ctx context.Context) error {
 		if grps[i].GetNumber() < nc.MinGID {
 			// Group number is too low, continue without
 			// this one.
-			log.Printf("Ignoring group %s, GID is below cutoff (%d < %d)", grps[i].GetName(), grps[i].GetNumber(), nc.MinGID)
+			nc.l.Warn("Ignoring group, GID is below cutoff",
+				"group", grps[i].GetName(),
+				"limit", nc.MinGID,
+				"gid", grps[i].GetNumber())
 			continue
 		}
 		nc.groups[grps[i].GetName()] = grps[i]
@@ -173,13 +180,17 @@ func (nc *NetAuthCacheFiller) findEntities(ctx context.Context) error {
 		if ents[i].GetNumber() < nc.MinUID {
 			// The uidNumber was too low, continue without
 			// this one.
-			log.Printf("Ignoring entity %s, UID is below cutoff (%d < %d)", ents[i].GetID(), ents[i].GetNumber(), nc.MinUID)
+			nc.l.Warn("Ignoring entity, UID is below cutoff",
+				"entity", ents[i].GetID(),
+				"limit", nc.MinUID,
+				"uid", ents[i].GetNumber())
 			continue
 		}
 		if _, ok := nc.pgroups[ents[i].GetMeta().GetPrimaryGroup()]; !ok {
 			// The primary group was invalid, continue
 			// without this one.
-			log.Printf("Ignoring entity %s, Primary Group is invalid", ents[i].GetID())
+			nc.l.Warn("Ignoring entity, Primary Group is invalid",
+				"entity", ents[i].GetID())
 			continue
 		}
 		if nc.hasBadShell(ents[i].GetMeta().GetShell()) {

@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
@@ -24,13 +24,15 @@ var (
 
 	outDir  = pflag.String("out", "/etc", "Output directory for cache files")
 	cfgfile = pflag.String("config", "", "Config file to use")
+
+	log hclog.Logger
 )
 
 func initialize() {
 	// Grab a listing of system shells and add them here
 	bytes, err := ioutil.ReadFile("/etc/shells")
 	if err != nil {
-		log.Printf("Error reading /etc/shells %s", err)
+		log.Error("Error reading /etc/shells %s", "error", err)
 		os.Exit(2)
 	}
 	shellString := string(bytes[:])
@@ -39,9 +41,9 @@ func initialize() {
 			systemShells = append(systemShells, s)
 		}
 	}
-	log.Println("The system will accept the following shells")
+	log.Info("The system will accept the following shells")
 	for _, s := range systemShells {
-		log.Printf("  %s", s)
+		log.Info(fmt.Sprintf("  %s", s))
 	}
 }
 
@@ -66,19 +68,21 @@ func main() {
 
 	filler, err := NewCacheFiller(int32(*minUID), int32(*minGID), *defShell, *defHomeDir, systemShells)
 	if err != nil {
-		log.Fatal("Error initializing Cache Filler: ", err)
+		log.Error("Error initializing Cache Filler: ", "error" ,err)
+		os.Exit(1)
 	}
 
 	cm := nsscache.NewCaches()
 	if err := cm.FillCaches(filler); err != nil {
-		log.Fatal("Unable to fill caches: ", err)
+		log.Error("Unable to fill caches: ", "error", err)
+		os.Exit(1)
 	}
 
 	err = cm.WriteFiles(&nsscache.WriteOptions{
 		Directory: *outDir,
 	})
 	if err != nil {
-		log.Fatal("Error writing updated caches: ", err)
+		log.Error("Error writing updated caches: ", "error", err)
 	}
-	log.Println("Caches Updated")
+	log.Info("Caches Updated")
 }
