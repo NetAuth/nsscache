@@ -8,12 +8,9 @@ import (
 	"github.com/MiLk/nsscache-go/source"
 	"github.com/hashicorp/go-hclog"
 
-	pb "github.com/netauth/protocol"
 	"github.com/netauth/netauth/pkg/netauth"
 
-	// We need a token cache available, even if no tokens will be
-	// issued.
-	_ "github.com/netauth/netauth/pkg/netauth/memory"
+	pb "github.com/netauth/protocol"
 )
 
 // A NetAuthCacheFiller satisfies the cache filler interface and uses
